@@ -218,6 +218,19 @@
     text-align: center; padding: 12px; border-radius: 10px;
     font-family: 'Anton', sans-serif; font-size: 28px; letter-spacing: 1px; margin: 10px 0;
   }
+  .blackout-banner {
+    display: none;
+    background: linear-gradient(135deg, #1a1a2e 0%, #0d1117 100%);
+    border: 2px solid var(--lions-silver);
+    color: var(--lions-silver);
+    text-align: center; padding: 16px; border-radius: 10px;
+    font-family: 'Anton', sans-serif; font-size: 32px; letter-spacing: 2px; margin: 10px 0;
+    animation: pulse-gold 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 8px rgba(179,153,93,0.4); }
+    50% { box-shadow: 0 0 24px rgba(179,153,93,0.8); }
+  }
 
   .status-bar {
     font-size: 12px; color: var(--muted);
@@ -249,6 +262,13 @@
     border: 1px solid rgba(34,197,94,.3);
     padding: 2px 8px; border-radius: 20px;
   }
+  .blackout-tag {
+    font-size: 10px; font-weight: 600;
+    background: rgba(179,153,93,.15); color: var(--lions-silver);
+    border: 1px solid rgba(179,153,93,.5);
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .lb-badges { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
   .lb-empty { padding: 14px; font-size: 13px; color: var(--muted); text-align: center; }
 
   @media (max-width: 480px) {
