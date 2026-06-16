@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🏈 Larry Lions Bingo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --lions-blue: #1a7fd4;
+    --lions-blue-dim: #0f4f85;
+    --lions-silver: #B3995D;
+    --bg: #1a1c1f;
+    --bg2: #22252a;
+    --bg3: #2c3038;
+    --surface: #2c3038;
+    --surface2: #363b44;
+    --text: #f0f2f5;
+    --muted: #8b909a;
+    --border: #3a3f4a;
+    --green: #22c55e;
+    --green-dim: #14532d;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    background: #0d1117;
+    border-bottom: 1px solid var(--border);
+    padding: 0 1rem;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar-title {
+    font-family: 'Anton', sans-serif;
+    font-size: 22px;
+    letter-spacing: .5px;
+    color: var(--text);
+  }
+  .topbar-title span { color: var(--lions-silver); }
+  .room-pill {
+    background: rgba(26,127,212,.2);
+    border: 1px solid rgba(26,127,212,.4);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--lions-blue);
+    display: none;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Join / Home ── */
+  .home-wrap {
+    min-height: calc(100vh - 52px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .home-hero {
+    font-family: 'Anton', sans-serif;
+    font-size: clamp(44px, 11vw, 80px);
+    line-height: .95;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: .25rem;
+  }
+  .home-hero em { color: var(--lions-silver); font-style: normal; display: block; }
+  .home-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 2rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    width: 100%; max-width: 400px;
+  }
+  .card h2 { font-size: 14px; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+  .field { margin-bottom: 10px; }
+  .field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 3px; }
+  .field input {
+    width: 100%; padding: 8px 12px; font-size: 14px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg2); color: var(--text); outline: none; transition: border-color .15s;
+  }
+  .field input:focus { border-color: var(--lions-blue); }
+  .field input.code-input { text-transform: uppercase; letter-spacing: 3px; font-weight: 600; font-size: 16px; }
+
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 1.25rem 0; color: var(--muted); font-size: 12px;
+  }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500;
+    font-family: inherit; cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); transition: background .12s; width: 100%;
+  }
+  .btn:hover { background: var(--bg3); }
+  .btn-primary { background: var(--lions-blue); color: #fff; border-color: var(--lions-blue); }
+  .btn-primary:hover { background: var(--lions-blue-dim); border-color: var(--lions-blue-dim); }
+  .btn-sm { width: auto; font-size: 13px; padding: 6px 14px; }
+
+  .error-msg { font-size: 12px; color: #f87171; margin-top: 8px; display: none; }
+
+  /* ── Lobby ── */
+  .lobby-wrap {
+    min-height: calc(100vh - 52px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 2rem 1rem;
+  }
+  .code-display {
+    background: var(--lions-blue-dim);
+    border: 1px solid var(--lions-blue);
+    color: #fff; border-radius: 14px; padding: 1.25rem 2rem; text-align: center; margin: 1rem 0;
+  }
+  .code-display .label { font-size: 12px; opacity: .7; margin-bottom: 4px; }
+  .code-display .code { font-family: 'Anton', sans-serif; font-size: 48px; letter-spacing: 6px; line-height: 1; }
+  .players-list { margin: 1rem 0; width: 100%; max-width: 400px; text-align: center; }
+  .player-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(34,197,94,.15); color: var(--green);
+    border: 1px solid rgba(34,197,94,.3);
+    font-size: 13px; font-weight: 500;
+    padding: 4px 12px; border-radius: 20px; margin: 3px;
+  }
+
+  /* ── Phrase editor ── */
+  .phrases-section { width: 100%; max-width: 400px; margin-top: 1rem; }
+  details summary { font-size: 13px; color: var(--muted); cursor: pointer; padding: 6px 0; user-select: none; }
+  .phrase-list { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+  .ptag {
+    font-size: 11px; padding: 3px 8px;
+    border: 1px solid var(--border); border-radius: 20px;
+    background: var(--bg3); color: var(--text);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ptag .del { cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1; }
+  .ptag .del:hover { color: #f87171; }
+  .add-row { display: flex; gap: 6px; margin-top: 6px; }
+  .add-row input {
+    flex: 1; padding: 7px 10px; font-size: 13px; font-family: inherit;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); color: var(--text); outline: none;
+  }
+  .add-row input:focus { border-color: var(--lions-blue); }
+
+  /* ── Game ── */
+  .game-wrap { padding: 0 1rem 2rem; max-width: 560px; margin: 0 auto; }
+  .game-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; gap: 8px; flex-wrap: wrap;
+  }
+  .game-toolbar .left { display: flex; gap: 6px; }
+
+  /* BINGO column headers */
+  .col-headers { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-bottom: 2px; }
+  .col-h {
+    text-align: center; font-family: 'Anton', sans-serif;
+    font-size: 24px; color: var(--lions-silver);
+  }
+
+  /* Grid wrapper with lion watermark */
+  .grid-wrapper {
+    position: relative;
+  }
+  .lion-watermark {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%; height: 70%;
+    opacity: 0.07;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bingo-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;
+    position: relative; z-index: 1;
+  }
+
+  .cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    min-height: 70px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; font-size: 10.5px; line-height: 1.3;
+    color: var(--text); cursor: pointer; padding: 5px 4px;
+    transition: background .1s, transform .08s;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .cell:hover:not(.free) { background: var(--surface2); }
+  .cell:active:not(.free) { transform: scale(.96); }
+  .cell.marked { background: var(--lions-blue-dim); color: #fff; border-color: var(--lions-blue); }
+  .cell.free { background: var(--lions-silver); color: #fff; border-color: var(--lions-silver); font-weight: 600; cursor: default; font-size: 11px; }
+  .cell.win { background: #14532d !important; color: var(--green) !important; border-color: var(--green) !important; }
+
+  .bingo-banner {
+    display: none;
+    background: #14532d;
+    border: 1px solid var(--green);
+    color: var(--green);
+    text-align: center; padding: 12px; border-radius: 10px;
+    font-family: 'Anton', sans-serif; font-size: 28px; letter-spacing: 1px; margin: 10px 0;
+  }
+
+  .status-bar {
+    font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between; margin: 8px 0;
+  }
+  .sync-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border); display: inline-block; margin-right: 4px; transition: background .3s;
+  }
+  .sync-dot.live { background: var(--green); }
+
+  /* Leaderboard */
+  .lb-wrap { margin-top: 1rem; }
+  .lb-title { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .lb { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .lb-row {
+    display: grid; grid-template-columns: 1.5rem 1fr auto auto;
+    gap: 8px; align-items: center; padding: 9px 14px;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row.me { background: rgba(26,127,212,.1); }
+  .lb-rank { font-size: 12px; color: var(--muted); }
+  .lb-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-sq { font-size: 12px; color: var(--muted); }
+  .bingo-tag {
+    font-size: 10px; font-weight: 600;
+    background: rgba(34,197,94,.15); color: var(--green);
+    border: 1px solid rgba(34,197,94,.3);
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .lb-empty { padding: 14px; font-size: 13px; color: var(--muted); text-align: center; }
+
+  @media (max-width: 480px) {
+    .cell { min-height: 58px; font-size: 9px; }
+    .col-h { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-title">LARRY LIONS <span>BINGO</span></div>
+  <div class="room-pill" id="topbar-room"></div>
+</div>
+
+<!-- ═══ JOIN SCREEN ═══ -->
+<div class="screen active" id="screen-join">
+  <div class="home-wrap">
+    <div class="home-hero">LARRY LIONS<em>BINGO</em></div>
+    <p class="home-sub">Detroit Lions edition — play together from anywhere</p>
+    <div class="card">
+      <h2>Create a room</h2>
+      <div class="field"><label>Your name</label><input id="host-name" placeholder="e.g. Sarah" /></div>
+      <button class="btn btn-primary" id="btn-create">Create room →</button>
+      <div class="divider">or join one</div>
+      <h2>Join a room</h2>
+      <div class="field"><label>Your name</label><input id="join-name" placeholder="e.g. Mom" /></div>
+      <div class="field"><label>Room code</label><input id="join-code" class="code-input" placeholder="XXXXX" maxlength="6" /></div>
+      <button class="btn btn-primary" id="btn-join">Join room →</button>
+      <p class="error-msg" id="join-error"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOBBY SCREEN ═══ -->
+<div class="screen" id="screen-lobby">
+  <div class="lobby-wrap">
+    <p style="font-size:14px;color:var(--muted);margin-bottom:.5rem;">Share this code with your family</p>
+    <div class="code-display" style="width:100%;max-width:400px;">
+      <div class="label">Room code</div>
+      <div class="code" id="lobby-code">——</div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:.5rem;">Everyone opens this page and enters the code above</p>
+    <div class="players-list" id="lobby-players"></div>
+    <div style="width:100%;max-width:400px;display:flex;gap:8px;">
+      <button class="btn btn-primary" id="btn-start" style="flex:1;">Start game →</button>
+    </div>
+    <div class="phrases-section">
+      <details>
+        <summary>✏️ Edit Larry's phrases before starting</summary>
+        <div class="phrase-list" id="lobby-phrase-list"></div>
+        <div class="add-row">
+          <input id="lobby-new-phrase" placeholder="Add a phrase…" />
+          <button class="btn btn-sm" id="lobby-btn-add">Add</button>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<div class="screen" id="screen-game">
+  <div class="game-wrap">
+    <div class="game-toolbar">
+      <div class="left">
+        <button class="btn btn-sm" id="btn-new-card">New card</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span id="sync-label">connecting…</span>
+      </div>
+    </div>
+
+    <div class="bingo-banner" id="bingo-banner">🎉 BINGO! 🎉</div>
+
+    <div class="col-headers">
+      <div class="col-h">B</div><div class="col-h">I</div>
+      <div class="col-h">N</div><div class="col-h">G</div><div class="col-h">O</div>
+    </div>
+
+    <div class="grid-wrapper">
+      <!-- Lion SVG watermark -->
+      <svg class="lion-watermark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="#B3995D">
+        <!-- Mane outer ring -->
+        <ellipse cx="100" cy="95" rx="72" ry="68" />
+        <!-- Mane inner cutout -->
+        <ellipse cx="100" cy="97" rx="52" ry="50" fill="#1a1c1f" />
+        <!-- Face -->
+        <ellipse cx="100" cy="100" rx="46" ry="44" />
+        <!-- Forehead lighter area -->
+        <ellipse cx="100" cy="83" rx="28" ry="18" fill="#1a1c1f" opacity="0.3"/>
+        <!-- Eyes -->
+        <ellipse cx="86" cy="92" rx="8" ry="7" fill="#1a1c1f"/>
+        <ellipse cx="114" cy="92" rx="8" ry="7" fill="#1a1c1f"/>
+        <ellipse cx="86" cy="93" rx="4" ry="4.5" />
+        <ellipse cx="114" cy="93" rx="4" ry="4.5" />
+        <!-- Nose bridge -->
+        <rect x="97" y="98" width="6" height="8" rx="3" fill="#1a1c1f"/>
+        <!-- Nose -->
+        <ellipse cx="100" cy="110" rx="12" ry="8"/>
+        <ellipse cx="100" cy="108" rx="8" ry="5" fill="#1a1c1f" opacity="0.5"/>
+        <!-- Nostrils -->
+        <ellipse cx="94" cy="111" rx="3.5" ry="3" fill="#1a1c1f"/>
+        <ellipse cx="106" cy="111" rx="3.5" ry="3" fill="#1a1c1f"/>
+        <!-- Mouth -->
+        <path d="M100 117 Q90 124 84 121" stroke="#1a1c1f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M100 117 Q110 124 116 121" stroke="#1a1c1f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- Chin tuft -->
+        <ellipse cx="100" cy="132" rx="10" ry="7"/>
+        <!-- Ear tufts on mane -->
+        <ellipse cx="60" cy="42" rx="10" ry="14" transform="rotate(-20 60 42)"/>
+        <ellipse cx="140" cy="42" rx="10" ry="14" transform="rotate(20 140 42)"/>
+        <!-- Cheek fur puffs -->
+        <ellipse cx="66" cy="108" rx="12" ry="10" transform="rotate(-10 66 108)"/>
+        <ellipse cx="134" cy="108" rx="12" ry="10" transform="rotate(10 134 108)"/>
+        <!-- Brow ridges -->
+        <path d="M78 84 Q86 79 94 83" stroke="#1a1c1f" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M106 83 Q114 79 122 84" stroke="#1a1c1f" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+
+      <div class="bingo-grid" id="grid"></div>
+    </div>
+
+    <div class="status-bar">
+      <span id="status-text">Tap a square when you hear it!</span>
+    </div>
+
+    <div class="lb-wrap">
+      <div class="lb-title">Live leaderboard</div>
+      <div class="lb" id="lb"><div class="lb-empty">Waiting for players…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA1BWeyu13gBmuorPq4KSl5uIjw_4Ms8Rs",
+  authDomain: "lions-bingo.firebaseapp.com",
+  databaseURL: "https://lions-bingo-default-rtdb.firebaseio.com",
+  projectId: "lions-bingo",
+  storageBucket: "lions-bingo.firebasestorage.app",
+  messagingSenderId: "70652223065",
+  appId: "1:70652223065:web:4196591826eba879965b48"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const DEFAULT_PHRASES = [
+  "Ra ra ra ra ra",
+  "That's a mans chin bitch",
+  "Unfair treatment from the refs",
+  "Hits the Griddy",
+  "Aggressive fist pump",
+  "High Fives",
+  "Slaps drywall",
+  "ANDREA!!",
+  "Paces to the yard",
+  "Shot of vodka",
+  "Mentions Tom Brady",
+  "F-Town",
+  "Snacks",
+  "I'm never moving again",
+  "Mentions Dan Campbell's Nose",
+  "Nervous Hand Fondling",
+  "Blames Ben for something",
+  "Derogatory remark about the announcers",
+  "Goff's not a Goof",
+  "Gotta play to win",
+  '"FUCK YOU"',
+  "BOOM!",
+  "Gets way too close pointing at the TV",
+  '"What are you doing?"',
+  "Chuck it Goff",
+  '"Get off of me"',
+  "Mentions his blood pressure",
+  "Paces to the backyard and Troy follows",
+  "Talks about moving to Florida",
+  "SOL",
+  "Claps Loudly",
+  "Slippery Jahmyr Gibbs",
+  "Hatred for Aaron Rodgers",
+  "Any hate towards the Cowboys",
+  "Angry Grunt",
+  "Paces in general",
+  "Hatred towards the Cowboys"
+];
+
+let state = {
+  roomCode: '', myName: '', myId: '',
+  card: [], marked: new Set(),
+  phrases: [...DEFAULT_PHRASES],
+  isHost: false
+};
+let unsubscribePlayers = null;
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+function shuffle(arr) {
+  let a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function setErr(msg) {
+  const el = document.getElementById('join-error');
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+}
+function setSynced(live) {
+  document.getElementById('sync-dot').classList.toggle('live', live);
+  document.getElementById('sync-label').textContent = live ? 'live' : 'reconnecting…';
+}
+
+function generateCard(phrases) {
+  const pool = shuffle(phrases);
+  const c = pool.slice(0, 24);
+  c.splice(12, 0, 'FREE');
+  return c;
+}
+function getLines() {
+  const L = [];
+  for (let r = 0; r < 5; r++) L.push([r*5, r*5+1, r*5+2, r*5+3, r*5+4]);
+  for (let c = 0; c < 5; c++) L.push([c, c+5, c+10, c+15, c+20]);
+  L.push([0, 6, 12, 18, 24]);
+  L.push([4, 8, 12, 16, 20]);
+  return L;
+}
+function hasBingo(marked) { return getLines().some(l => l.every(i => marked.has(i))); }
+function winSet(marked) {
+  const s = new Set();
+  getLines().forEach(l => { if (l.every(i => marked.has(i))) l.forEach(i => s.add(i)); });
+  return s;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const wins = winSet(state.marked);
+  state.card.forEach((phrase, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    if (phrase === 'FREE') cell.classList.add('free');
+    else if (wins.has(i)) cell.classList.add('win');
+    else if (state.marked.has(i)) cell.classList.add('marked');
+    cell.textContent = phrase;
+    if (phrase !== 'FREE') cell.addEventListener('click', () => toggleCell(i));
+    grid.appendChild(cell);
+  });
+  const bingo = hasBingo(state.marked);
+  document.getElementById('bingo-banner').style.display = bingo ? 'block' : 'none';
+  document.getElementById('status-text').textContent = bingo
+    ? '🎉 You got BINGO! Keep going!'
+    : `${state.marked.size - 1} square${state.marked.size - 1 === 1 ? '' : 's'} marked`;
+}
+
+async function toggleCell(i) {
+  if (state.marked.has(i)) state.marked.delete(i);
+  else state.marked.add(i);
+  renderGrid();
+  await pushProgress();
+}
+
+async function newCard() {
+  state.card = generateCard(state.phrases);
+  state.marked = new Set([12]);
+  renderGrid();
+  await pushProgress();
+}
+
+async function pushProgress() {
+  const playerRef = ref(db, `rooms/${state.roomCode}/players/${state.myId}`);
+  await set(playerRef, {
+    name: state.myName,
+    squares: state.marked.size - 1,
+    bingo: hasBingo(state.marked),
+    ts: Date.now()
+  });
+}
+
+function listenToPlayers() {
+  if (unsubscribePlayers) unsubscribePlayers();
+  const playersRef = ref(db, `rooms/${state.roomCode}/players`);
+  unsubscribePlayers = onValue(playersRef, snap => {
+    setSynced(true);
+    const data = snap.val() || {};
+    const players = Object.entries(data)
+      .map(([id, p]) => ({ id, ...p }))
+      .filter(p => Date.now() - p.ts < 7200000)
+      .sort((a, b) => b.bingo - a.bingo || b.squares - a.squares);
+    renderLeaderboard(players);
+  }, () => setSynced(false));
+}
+
+function listenToLobbyPlayers() {
+  const playersRef = ref(db, `rooms/${state.roomCode}/players`);
+  onValue(playersRef, snap => {
+    const data = snap.val() || {};
+    const names = Object.values(data).map(p => p.name);
+    const container = document.getElementById('lobby-players');
+    container.innerHTML = names.length
+      ? names.map(n => `<span class="player-chip">✓ ${n}</span>`).join('')
+      : '<span style="font-size:13px;color:var(--muted);">Waiting for players to join…</span>';
+  });
+}
+
+function renderLeaderboard(players) {
+  const lb = document.getElementById('lb');
+  if (!players.length) { lb.innerHTML = '<div class="lb-empty">Waiting for others to join…</div>'; return; }
+  lb.innerHTML = players.map((p, i) => `
+    <div class="lb-row${p.id === state.myId ? ' me' : ''}">
+      <span class="lb-rank">${i + 1}</span>
+      <span class="lb-name">${p.name}${p.id === state.myId ? ' <span style="font-weight:400;color:var(--muted);">(you)</span>' : ''}</span>
+      <span class="lb-sq">${p.squares} sq</span>
+      <span>${p.bingo ? '<span class="bingo-tag">BINGO!</span>' : ''}</span>
+    </div>`).join('');
+}
+
+document.getElementById('btn-create').addEventListener('click', async () => {
+  const name = document.getElementById('host-name').value.trim();
+  if (!name) { setErr('Please enter your name.'); return; }
+  setErr('');
+  const code = Math.random().toString(36).slice(2, 7).toUpperCase();
+  state.roomCode = code; state.myName = name; state.myId = uid(); state.isHost = true;
+  state.phrases = [...DEFAULT_PHRASES];
+  await set(ref(db, `rooms/${code}/meta`), { phrases: state.phrases, created: Date.now() });
+  await set(ref(db, `rooms/${code}/players/${state.myId}`), { name, squares: 0, bingo: false, ts: Date.now() });
+  document.getElementById('lobby-code').textContent = code;
+  document.getElementById('topbar-room').textContent = code;
+  document.getElementById('topbar-room').style.display = 'block';
+  renderLobbyPhrases();
+  listenToLobbyPlayers();
+  show('screen-lobby');
+});
+
+document.getElementById('btn-join').addEventListener('click', async () => {
+  const name = document.getElementById('join-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!name) { setErr('Please enter your name.'); return; }
+  if (code.length < 4) { setErr('Please enter a valid room code.'); return; }
+  setErr('');
+  const metaSnap = await get(ref(db, `rooms/${code}/meta`));
+  if (!metaSnap.exists()) { setErr('Room not found — double-check the code.'); return; }
+  const meta = metaSnap.val();
+  state.roomCode = code; state.myName = name; state.myId = uid(); state.isHost = false;
+  state.phrases = meta.phrases || DEFAULT_PHRASES;
+  document.getElementById('topbar-room').textContent = code;
+  document.getElementById('topbar-room').style.display = 'block';
+  enterGame();
+});
+
+document.getElementById('btn-start').addEventListener('click', async () => {
+  await set(ref(db, `rooms/${state.roomCode}/meta`), { phrases: state.phrases, started: true, created: Date.now() });
+  enterGame();
+});
+
+function enterGame() {
+  newCard();
+  listenToPlayers();
+  show('screen-game');
+}
+
+document.getElementById('btn-new-card').addEventListener('click', newCard);
+
+function renderLobbyPhrases() {
+  const list = document.getElementById('lobby-phrase-list');
+  list.innerHTML = '';
+  state.phrases.forEach((p, i) => {
+    const tag = document.createElement('div'); tag.className = 'ptag';
+    tag.innerHTML = `${p} <span class="del" data-i="${i}">×</span>`;
+    list.appendChild(tag);
+  });
+  list.querySelectorAll('.del').forEach(el => {
+    el.addEventListener('click', () => { state.phrases.splice(+el.dataset.i, 1); renderLobbyPhrases(); });
+  });
+}
+document.getElementById('lobby-btn-add').addEventListener('click', () => {
+  const inp = document.getElementById('lobby-new-phrase');
+  const v = inp.value.trim();
+  if (v && !state.phrases.includes(v)) { state.phrases.push(v); inp.value = ''; renderLobbyPhrases(); }
+});
+document.getElementById('lobby-new-phrase').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('lobby-btn-add').click();
+});
+</script>
+</body>
+</html>
